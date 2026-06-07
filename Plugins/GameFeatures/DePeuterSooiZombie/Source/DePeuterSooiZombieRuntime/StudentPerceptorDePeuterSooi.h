@@ -8,19 +8,26 @@
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AISense_Damage.h"
-#include "StudentPerceptor.generated.h"
+
+#include "movement/SteeringBehaviors.h"
+
+#include "StudentPerceptorDePeuterSooi.generated.h"
+
+class UBehaviorTreeComponent;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class DEPEUTERSOOIZOMBIERUNTIME_API UStudentPerceptor : public UActorComponent
+class DEPEUTERSOOIZOMBIERUNTIME_API UStudentPerceptorDePeuterSooi : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this component's properties
-	UStudentPerceptor();
+	UStudentPerceptorDePeuterSooi();
 	
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	virtual void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
+private:
 };
