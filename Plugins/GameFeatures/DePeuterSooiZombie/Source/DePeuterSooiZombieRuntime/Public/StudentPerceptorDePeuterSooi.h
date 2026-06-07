@@ -9,7 +9,7 @@
 #include "Perception/AISenseConfig_Damage.h"
 #include "Perception/AISense_Damage.h"
 
-#include "movement/SteeringBehaviors.h"
+#include "../movement/SteeringBehaviors.h"
 
 #include "StudentPerceptorDePeuterSooi.generated.h"
 
@@ -27,7 +27,5 @@ public:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
-	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
-	
-private:
+	virtual void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
 };

@@ -21,6 +21,8 @@ void UStudentPerceptorDePeuterSooi::BeginPlay()
 
 void UStudentPerceptorDePeuterSooi::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
+	
+	
 	GEngine->AddOnScreenDebugMessage(5, 1.f, FColor::Green, 
 	FString::Printf(TEXT("Saw Something!")));
 }
