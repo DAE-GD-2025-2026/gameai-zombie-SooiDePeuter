@@ -1,10 +1,10 @@
 #include "SteeringBehaviors.h"
 
 //predict target of another actor
-FVector2D ISteeringBehavior::PredictTarget(const AActor* agent, const FTargetData& target)
+FVector2D ISteeringBehavior::PredictTarget(FVector2D position, const FTargetData& target)
 {
 	//calculate time to reach target
-	const float time{ (float)(FVector2D(agent->GetActorTransform().GetLocation()) - Target.Position).Length() / CustomVars::maxLinearSpeed };
+	const float time{ (float)(position - Target.Position).Length() / CustomVars::maxLinearSpeed };
 
 	//calculate predicted position
 	const FVector2D predictPosition{ Target.Position + time * Target.LinearVelocity };
@@ -13,41 +13,41 @@ FVector2D ISteeringBehavior::PredictTarget(const AActor* agent, const FTargetDat
 }
 
 //predict target of self
-FVector2D ISteeringBehavior::PredictTarget(const AActor* agent, float time)
+FVector2D ISteeringBehavior::PredictTarget(FVector2D position, FVector2D velocity, float time)
 {
 	//calculate predicted position
-	const FVector2D predictPosition{ FVector2D(agent->GetActorTransform().GetLocation()).X + time * agent->GetVelocity().X,
-									 FVector2D(agent->GetActorTransform().GetLocation()).Y + time * agent->GetVelocity().Y};
+	const FVector2D predictPosition{ position.X + time * velocity.X,
+									 position.Y + time * velocity.Y};
 
 	return predictPosition;
 }
 
 //SEEK
-SteeringOutput Seek::CalculateSteering(float DeltaTime, AActor* agent)
+SteeringOutput Seek::CalculateSteering(FVector2D position)
 {
 	//make an output object
 	SteeringOutput result;
 	
 	//set Velocity
-	result.LinearVelocity = Target.Position - (FVector2D)agent->GetActorTransform().GetLocation();
+	result.LinearVelocity = Target.Position - position;
 	
 	return result;
 }
 
 //FLEE
-SteeringOutput Flee::CalculateSteering(float DeltaTime, AActor* agent)
+SteeringOutput Flee::CalculateSteering(FVector2D position)
 {
 	//make an output object
 	SteeringOutput result;
 
 	//set Velocity
-	result.LinearVelocity = (FVector2D)agent->GetActorTransform().GetLocation() - Target.Position;
+	result.LinearVelocity = position - Target.Position;
 
 	return result;
 }
 
 //ARRIVE
-SteeringOutput Arrive::CalculateSteering(float DeltaTime, AActor* agent)
+SteeringOutput Arrive::CalculateSteering(FVector2D position)
 {
 	//hardcode arrive radiuses
 	const float slowRadius{2000.f};
@@ -56,16 +56,16 @@ SteeringOutput Arrive::CalculateSteering(float DeltaTime, AActor* agent)
 	SteeringOutput result;
 
 	//set Velocity
-	result.LinearVelocity = Target.Position - (FVector2D)agent->GetActorTransform().GetLocation();
+	result.LinearVelocity = Target.Position - position;
 
 	//set max speed
-	if ((Target.Position - (FVector2D)agent->GetActorTransform().GetLocation()).Length() < m_TargetRadius)
+	if ((Target.Position - position).Length() < m_TargetRadius)
 	{
 		CustomVars::SetMaxLinearSpeed(0);
 	}
-	if ((Target.Position - (FVector2D)agent->GetActorTransform().GetLocation()).Length() < slowRadius)
+	if ((Target.Position - position).Length() < slowRadius)
 	{
-		CustomVars::SetMaxLinearSpeed((Target.Position - (FVector2D)agent->GetActorTransform().GetLocation()).Length() / slowRadius * CustomVars::maxLinearSpeed);
+		CustomVars::SetMaxLinearSpeed((Target.Position - position).Length() / slowRadius * CustomVars::maxLinearSpeed);
 	}
 	else
 	{
@@ -80,31 +80,8 @@ void Arrive::SetTargetRadius(float radius)
 	m_TargetRadius = radius;
 }
 
-//FACE
-SteeringOutput Face::CalculateSteering(float DeltaTime, AActor* agent)
-{
-	SteeringOutput result{};
-
-	const FVector2D targetDirection { Target.Position - (FVector2D)agent->GetActorTransform().GetLocation() };
-	const float actorAngle{ float(FMath::DegreesToRadians(agent->GetActorRotation().Yaw)) };
-	const float rotationSpeed{ 5 };
-	
-	//rotate over the smallest angle
-	const float rotation = FMath::FindDeltaAngleRadians(actorAngle, FMath::Atan2(targetDirection.Y, targetDirection.X));
-
-	result.AngularVelocity = rotation * DeltaTime * rotationSpeed;
-
-	//stop rotating if angle < 0.05 rads
-	if (FMath::Abs(rotation) < 0.05f)
-	{
-		result.AngularVelocity = 0.f;
-	}
-
-	return result;
-}
-
 //PURSUIT
-SteeringOutput Pursuit::CalculateSteering(float DeltaTime, AActor* agent)
+SteeringOutput Pursuit::CalculateSteering(FVector2D position)
 {
 	//make an output object
 	SteeringOutput result;
@@ -112,18 +89,18 @@ SteeringOutput Pursuit::CalculateSteering(float DeltaTime, AActor* agent)
 	//set direction if target is immobile VS mobile
 	if (Target.LinearVelocity.Length() < FLT_EPSILON)
 	{
-		result.LinearVelocity = Target.Position - (FVector2D)agent->GetActorTransform().GetLocation();
+		result.LinearVelocity = Target.Position - position;
 	}
 	else
 	{
-		result.LinearVelocity = PredictTarget(agent, Target) - (FVector2D)agent->GetActorTransform().GetLocation();
+		result.LinearVelocity = PredictTarget(position, Target) - position;
 	}
 
 	return result;
 }
 
 //EVADE
-SteeringOutput Evade::CalculateSteering(float DeltaTime, AActor* agent)
+SteeringOutput Evade::CalculateSteering(FVector2D position)
 {
 	//make an output object
 	SteeringOutput result;
@@ -132,30 +109,30 @@ SteeringOutput Evade::CalculateSteering(float DeltaTime, AActor* agent)
 	float evadeRadius{ 250.f };
 
 	//implement evade radius
-	result.IsValid = (evadeRadius > ((FVector2D)agent->GetActorTransform().GetLocation() - Target.Position).Length());
+	result.IsValid = (evadeRadius > position.Length());
 
 	//set direction if target is immobile VS mobile
 	if (Target.LinearVelocity.Length() < FLT_EPSILON)
 	{
-		result.LinearVelocity = (FVector2D)agent->GetActorTransform().GetLocation() - Target.Position;
+		result.LinearVelocity = position - Target.Position;
 	}
 	else
 	{
-		result.LinearVelocity = (FVector2D)agent->GetActorTransform().GetLocation() - PredictTarget(agent, Target);
+		result.LinearVelocity = position - PredictTarget(position, Target);
 	}
 
 	return result;
 }
 
 //Wander
-SteeringOutput Wander::CalculateSteering(float DeltaTime, AActor* agent)
+SteeringOutput Wander::CalculateSteering(FVector2D position)
 {
 	//make an output object
 	SteeringOutput result;
 
 	//calculate walking circle
-	const FVector2D center{ PredictTarget(agent, 1.f) };
-	float radius{float(((FVector2D)agent->GetActorTransform().GetLocation() - center).Length())};
+	const FVector2D center{ PredictTarget(position, {200, 200}, 1.f) };
+	float radius{float((position - center).Length())};
 	if (radius < 1.f)
 	{
 		radius = 1.f;
@@ -163,12 +140,12 @@ SteeringOutput Wander::CalculateSteering(float DeltaTime, AActor* agent)
 
 	//calculate random angle
 	const float angle{ 0.25f * float(rand() % 8 * PI) };
-
+	
 	//calculate point on circle
 	const FVector2D target{ center.X + radius * cos(angle), center.Y + radius * sin(angle) };
-
+	
 	//set Velocity
-	result.LinearVelocity = target - (FVector2D)agent->GetActorTransform().GetLocation();
+	result.LinearVelocity = target - position;
 
 	return result;
 }

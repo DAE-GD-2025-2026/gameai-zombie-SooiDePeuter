@@ -2,6 +2,7 @@
 
 
 #include "StudentPerceptorDePeuterSooi.h"
+#include "GlobalVars.h"
 
 
 UStudentPerceptorDePeuterSooi::UStudentPerceptorDePeuterSooi()
@@ -21,7 +22,10 @@ void UStudentPerceptorDePeuterSooi::BeginPlay()
 
 void UStudentPerceptorDePeuterSooi::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
-	
+	if (GlobalVars::activeStimulus == nullptr)
+	{
+		GlobalVars::activeStimulus = &Stimulus;
+	}
 	
 	GEngine->AddOnScreenDebugMessage(5, 1.f, FColor::Green, 
 	FString::Printf(TEXT("Saw Something!")));
